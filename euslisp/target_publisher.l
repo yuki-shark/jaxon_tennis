@@ -19,8 +19,8 @@
       (setq rad (deg2rad theta))
 
       (setq x 1000)
-      (setq y (+ -300 (* -150 (cos rad))))
-      (setq z (+ 1700 (* 150 (sin rad))))
+      (setq y (+ -100 (* -400 (cos rad))))
+      (setq z (+ 1300 (* 400 (sin rad))))
 
       (setq msg (instance geometry_msgs::PointStamped :init
                           :point

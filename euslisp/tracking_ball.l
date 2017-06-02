@@ -2,16 +2,19 @@
 (load "../model/racket-model.l")
 (load "fullbody-ik-jaxon.l")
 
-(defun callback-target (msg)
-  (setq *target-msg* msg)
+(defun callback-point (msg)
+  (setq *point-msg* msg)
   )
 
-(defun jaxon_racket3 ()
+(defun tracking_ball ()
 
-  (ros::roseus "jaxon_racket3")
-  (ros::subscribe "/target_point"
+  (ros::roseus "tracking_ball")
+
+  (setq *tfl* (instance ros::transform-listener :init)) ;; subscribe
+
+  (ros::subscribe "/centroid_calc_from_stereo_image"
                   geometry_msgs::PointStamped
-                  #'callback-target 1)
+                  #'callback-point 1)
 
   (jaxon)
   (setq *robot* *jaxon*)
@@ -30,17 +33,39 @@
   (objects (list *robot* *racket*))
 
   ;(send *racket* :move-coords *target* (send *racket* :get :target))
-  (setq *target-msg* nil)
+  (setq *point-msg* nil)
 
   (while (ros::ok)
 
     (ros::spin-once)
 
-    (when *target-msg*
+    (when *point-msg*
 
-      (setq x (send *target-msg* :point :x))
-      (setq y (send *target-msg* :point :y))
-      (setq z (send *target-msg* :point :z))
+      (when
+          (send *tfl* :wait-for-transform
+                "BODY"
+                (send *point-msg* :header :frame_id)
+                (send *point-msg* :header :stamp)
+                1.0)
+        (setq body->camera-frame
+              (send *tfl* :lookup-transform "BODY"
+                    (send *point-msg* :header :frame_id)
+                    (send *point-msg* :header :stamp)))
+        (pprint body->camera-frame)
+        (setq body->hitpoint
+              (send body->camera-frame
+                    :transform-vector
+                    (ros::tf-point->pos (send *point-msg* :point))))
+        (pprint body->hitpoint)
+        )
+
+      ;; (setq x (send body->hitpoint :point :x))
+      ;; (setq y (send body->hitpoint :point :y))
+      ;; (setq z (send body->hitpoint :point :z))
+
+      (setq x (send (elt body->hitpoint 0)))
+      (setq y (send (elt body->hitpoint 1)))
+      (setq z (send (elt body->hitpoint 2)))
 
       (setq *target*
       (make-coords :pos (float-vector x y z)
@@ -66,27 +91,11 @@
       (send *racket* :move-coords *target* (send *racket* :get :target))
       (send *racket* :move-coords (send *robot* :rarm :end-coords :copy-worldcoords) (send *racket* :get :gripper))
       (send *irtviewer* :draw-objects)
-      (setq *target-msg* nil)
+      (setq *point-msg* nil)
       )
     (unix::usleep (* 1000 10));; 10ms
     (x::window-main-one)
     )
 )
 
-(jaxon_racket3)
-
-#|
-(setq tm (instance mtimer :init))
-(progn (send tm :start) (fullbody-ik-jaxon
-   :rarm-target (send *racket* :get :gripper)
-   ;:larm-target (send *shovel* :get :larm)
-   :rotation-axis (list t t t t) ;; nil, :z
-   :translation-axis (list t t t t)
-   :use-waist-r nil
-   :use-waist-y t
-   :root-link-virtual-joint-weight ;; root movement weight
-   (float-vector 0.1 0.1 0.1 0.0 0.2 0.0) ;; x,y,z,roll,pitch,yaw
-   :debug-view nil
-   ) (send tm :stop))
-|#
-
+(tracking_ball)
