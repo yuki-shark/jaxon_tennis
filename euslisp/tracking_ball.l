@@ -59,17 +59,24 @@
         (pprint body->hitpoint)
         )
 
-      ;; (setq x (send body->hitpoint :point :x))
-      ;; (setq y (send body->hitpoint :point :y))
-      ;; (setq z (send body->hitpoint :point :z))
+      ;; (setq hitpoint-world
+      ;;       (send (send *jaxon* :body_lk) :transform-vector body->hitpoint))
+      (setq hitpoint-world
+            (send (send *robot* :body_lk) :transform-vector body->hitpoint))
 
-      (setq x (send (elt body->hitpoint 0)))
-      (setq y (send (elt body->hitpoint 1)))
-      (setq z (send (elt body->hitpoint 2)))
+
+
+      ;; FIX ME
+      (setq hitpoint-world (float-vector (* 0.001 (elt hitpoint-world 0)) (* 0.001 (elt hitpoint-world 1)) (* 0.001 (elt hitpoint-world 2))))
+
+
 
       (setq *target*
-      (make-coords :pos (float-vector x y z)
-                   :rpy (list 0 (deg2rad 25) 0)))
+            (make-coords :pos hitpoint-world
+                         :rpy (list 0 (deg2rad 25) 0)))
+
+      (print "target")
+      (format t "x: ~A   y: ~A   z: ~A~%" (elt (send *target* :pos) 0) (elt (send *target* :pos) 1) (elt (send *target* :pos) 2))
 
       (fullbody-ik-jaxon
        :rarm-target *target*
