@@ -1,3 +1,6 @@
+;;please change jaxon_ros_bridge.launch
+;;//hrpsys_ros_bridge_tutorials/launch/jaxon_ros_bridge.launch
+
 (load "package://hrpsys_ros_bridge_tutorials/euslisp/jaxon-interface.l")
 (load "../model/racket-model.l")
 (load "fullbody-ik-jaxon.l")
