@@ -30,6 +30,8 @@
     (send *robot* :put :racket-target tg)
     tg)
 
+  ;(send *ri* :angle-vector (send *robot* :angle-vector) 1000) ;; 1000ms
+
   (objects (list *robot* *racket*))
 
   ;(send *racket* :move-coords *target* (send *racket* :get :target))
@@ -43,14 +45,19 @@
 
       (when
           (send *tfl* :wait-for-transform
-                "BODY"
+                ;; "BODY"
+                "rleg_end_coords"
                 (send *point-msg* :header :frame_id)
                 (send *point-msg* :header :stamp)
                 1.0)
         (setq body->camera-frame
-              (send *tfl* :lookup-transform "BODY"
+              (send *tfl* :lookup-transform "rleg_end_coords"
                     (send *point-msg* :header :frame_id)
                     (send *point-msg* :header :stamp)))
+
+        (print "point-msg")
+        (format t "x: ~A   y: ~A   z: ~A~%" (send *point-msg* :point :x) (send *point-msg* :point :y) (send *point-msg* :point :z))
+
         (pprint body->camera-frame)
         (setq body->hitpoint
               (send body->camera-frame
@@ -59,17 +66,9 @@
         (pprint body->hitpoint)
         )
 
-      ;; (setq hitpoint-world
-      ;;       (send (send *jaxon* :body_lk) :transform-vector body->hitpoint))
+      (send *robot* :fix-leg-to-coords (make-coords))
       (setq hitpoint-world
-            (send (send *robot* :body_lk) :transform-vector body->hitpoint))
-
-
-
-      ;; FIX ME
-      (setq hitpoint-world (float-vector (* 0.001 (elt hitpoint-world 0)) (* 0.001 (elt hitpoint-world 1)) (* 0.001 (elt hitpoint-world 2))))
-
-
+            (send (send *robot* :rleg :end-coords) :transform-vector body->hitpoint))
 
       (setq *target*
             (make-coords :pos hitpoint-world
