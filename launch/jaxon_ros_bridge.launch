@@ -1,0 +1,33 @@
+<launch>
+  <arg name="RUN_RVIZ" default="true" />
+  <arg name="SIMULATOR_NAME" default="JAXON(Robot)0" />
+  <arg name="USE_UNSTABLE_RTC" default="true"/>
+  <rosparam command="load"
+            file="$(find hrpsys_ros_bridge_tutorials)/models/JAXON_controller_config.yaml" />
+
+  <arg name="corbaport" default="15005" />
+  <include file="$(find hrpsys_ros_bridge)/launch/hrpsys_ros_bridge.launch">
+    <arg name="SIMULATOR_NAME" value="$(arg SIMULATOR_NAME)" />
+    <arg name="MODEL_FILE" value="$(find jsk_models)/JAXON/JAXONmain.wrl" />
+    <!--arg name="COLLADA_FILE" value="$(find hrpsys_ros_bridge_tutorials)/models/JAXON.dae" /-->
+    <arg name="COLLADA_FILE" value="$(find hrpsys_ros_bridge_tutorials)/models/JAXON_WH_SENSORS.urdf" />
+    <arg name="CONF_FILE" value="$(find hrpsys_ros_bridge_tutorials)/models/JAXON.conf" />
+    <arg name="corbaport" default="$(arg corbaport)" />
+    <arg name="USE_WALKING" default="true" if="$(arg USE_UNSTABLE_RTC)"/>
+    <arg name="USE_IMPEDANCECONTROLLER" default="true" if="$(arg USE_UNSTABLE_RTC)" />
+    <arg name="USE_EMERGENCYSTOPPER" default="true" if="$(arg USE_UNSTABLE_RTC)" />
+    <arg name="USE_REFERENCEFORCEUPDATER" default="true" if="$(arg USE_UNSTABLE_RTC)" />
+    <arg name="ROBOT_TYPE" default="jaxon" if="$(arg USE_UNSTABLE_RTC)" />
+    <arg name="USE_ROBOT_TYPE_SETTING" default="true" if="$(arg USE_UNSTABLE_RTC)" />
+    <arg name="BASE_LINK" default="WAIST_LINK0" />
+
+
+  </include>
+
+  <group if="$(arg RUN_RVIZ)" >
+    <node name="jaxon_rviz" pkg="rviz" type="rviz" respawn="true"
+          args="-sync -d $(find hrpsys_ros_bridge_tutorials)/launch/jaxon.rviz" />
+  </group>
+</launch>
+
+
