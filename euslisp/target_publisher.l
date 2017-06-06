@@ -34,7 +34,7 @@
 
       (ros::publish "target_point" msg)
 
-      (unix::usleep (* 1000 100));; 100ms
+      (unix::usleep (* 1000 200));; 100ms
     )
   )
 )
