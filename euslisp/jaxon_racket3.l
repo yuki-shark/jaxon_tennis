@@ -6,7 +6,7 @@
   (setq *target-msg* msg)
   )
 
-(defun jaxon_racket3 ()
+(defun jaxon_racket3 (*range*)
 
   (ros::roseus "jaxon_racket3")
   (ros::subscribe "/target_point"
@@ -59,7 +59,38 @@
        :use-waist-y t
        :root-link-virtual-joint-weight ;; root movement weight
        (float-vector 0.1 0.1 0.1 0.0 0.2 0.0) ;; x,y,z,roll,pitch,yaw
+       :debug-view nil
        )
+
+      (let ((off (send *target* :transformation (send *robot* :get :racket-target)))
+            roll re-calc)
+        (pprint off)
+        (setq roll (caddr (car (send off :rpy-angle))))
+        (pprint roll)
+        (if (> roll *range*)
+            (setq roll *range* re-calc t)
+          (if (< roll (* -1 *range*))
+              (setq roll (* -1 *range*) re-calc t)
+            ))
+        (when re-calc
+          (setq re-calc
+               (send (send *target* :copy-worldcoords) :rotate roll :x))
+          (pprint (list 're re-calc))
+          (fullbody-ik-jaxon
+           :rarm-target re-calc
+           :move-target-arms
+           (list (send *robot* :get :racket-target)
+                 (send *robot* :larm :end-coords))
+           :rotation-axis (list t t t t)
+                                        ;:rotation-axis (list t t t t)
+           :translation-axis (list t t t t)
+           :use-waist-r nil
+           :use-waist-y t
+           :root-link-virtual-joint-weight ;; root movement weight
+           (float-vector 0.1 0.1 0.1 0.0 0.2 0.0) ;; x,y,z,roll,pitch,yaw
+           :debug-view nil
+           ))
+        )
 
       (print ";; ik solved~%")
 
@@ -73,20 +104,4 @@
     )
 )
 
-(jaxon_racket3)
-
-#|
-(setq tm (instance mtimer :init))
-(progn (send tm :start) (fullbody-ik-jaxon
-   :rarm-target (send *racket* :get :gripper)
-   ;:larm-target (send *shovel* :get :larm)
-   :rotation-axis (list t t t t) ;; nil, :z
-   :translation-axis (list t t t t)
-   :use-waist-r nil
-   :use-waist-y t
-   :root-link-virtual-joint-weight ;; root movement weight
-   (float-vector 0.1 0.1 0.1 0.0 0.2 0.0) ;; x,y,z,roll,pitch,yaw
-   :debug-view nil
-   ) (send tm :stop))
-|#
-
+(jaxon_racket3 (deg2rad 45))
