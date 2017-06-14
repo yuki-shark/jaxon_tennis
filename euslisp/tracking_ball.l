@@ -19,7 +19,8 @@
                   geometry_msgs::PointStamped
                   #'callback-point 1)
 
-  (jaxon)
+  ;(jaxon)
+  (jaxon-init)
   (setq *robot* *jaxon*)
   (send *robot* :reset-pose)
   (send *robot* :fix-leg-to-coords (make-coords))
@@ -33,7 +34,7 @@
     (send *robot* :put :racket-target tg)
     tg)
 
-  ;(send *ri* :angle-vector (send *robot* :angle-vector) 1000) ;; 1000ms
+  (send *ri* :angle-vector (send *robot* :angle-vector) 1000) ;; 1000ms
 
   (objects (list *robot* *racket*))
 
@@ -100,6 +101,9 @@
       (send *racket* :move-coords *target* (send *racket* :get :target))
       (send *racket* :move-coords (send *robot* :rarm :end-coords :copy-worldcoords) (send *racket* :get :gripper))
       (send *irtviewer* :draw-objects)
+
+      (send *ri* :angle-vector (send *robot* :angle-vector) 1000) ;; 1000ms
+
       (setq *point-msg* nil)
       )
     (unix::usleep (* 1000 10));; 10ms
