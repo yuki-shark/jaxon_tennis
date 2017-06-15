@@ -4,6 +4,9 @@
 (load "package://hrpsys_ros_bridge_tutorials/euslisp/jaxon-interface.l")
 (load "../model/racket-model.l")
 (load "fullbody-ik-jaxon.l")
+;;;
+(setq *real* t)
+(setq *range* (deg2rad 45))
 
 (defun callback-point (msg)
   (setq *point-msg* msg)
@@ -19,8 +22,10 @@
                   geometry_msgs::PointStamped
                   #'callback-point 1)
 
-  ;(jaxon)
-  (jaxon-init)
+  (if *real*
+      (jaxon-init)
+    (jaxon))
+  ;;
   (setq *robot* *jaxon*)
   (send *robot* :reset-pose)
   (send *robot* :fix-leg-to-coords (make-coords))
@@ -33,14 +38,16 @@
     (send pr :assoc tg)
     (send *robot* :put :racket-target tg)
     tg)
-
-  (send *ri* :angle-vector (send *robot* :angle-vector) 1000) ;; 1000ms
+  (setq *prev-angle* (send *robot* :angle-vector))
+  (when *real*
+    (send *ri* :angle-vector (send *robot* :angle-vector) 6000)
+    (send *ri* :wait-interpolation))
 
   (objects (list *robot* *racket*))
 
   ;(send *racket* :move-coords *target* (send *racket* :get :target))
   (setq *point-msg* nil)
-
+  (ros::ros-info "start tracking")
   (while (ros::ok)
 
     (ros::spin-once)
@@ -49,7 +56,6 @@
 
       (when
           (send *tfl* :wait-for-transform
-                ;; "BODY"
                 "rleg_end_coords"
                 (send *point-msg* :header :frame_id)
                 (send *point-msg* :header :stamp)
@@ -75,7 +81,7 @@
             (send (send *robot* :rleg :end-coords) :transform-vector body->hitpoint))
 
       (setq *target*
-            (make-coords :pos hitpoint-world
+            (make-coords :pos (float-vector 1000 (elt hitpoint-world 1) (elt hitpoint-world 2))
                          :rpy (list 0 (deg2rad 25) 0)))
 
       (print "target")
@@ -83,7 +89,7 @@
 
       (fullbody-ik-jaxon
        :rarm-target *target*
-                                        ;:larm-target (send *shovel* :get :larm)
+       ;:larm-target (send *shovel* :get :larm)
        :move-target-arms
        (list (send *robot* :get :racket-target)
              (send *robot* :larm :end-coords))
@@ -93,8 +99,41 @@
        :use-waist-r nil
        :use-waist-y t
        :root-link-virtual-joint-weight ;; root movement weight
-       (float-vector 0.1 0.1 0.1 0.0 0.2 0.0) ;; x,y,z,roll,pitch,yaw
+       (float-vector 0.1 0.1 0.1 0.03 0.0 0.03) ;; x,y,z,roll,pitch,yaw
+       :debug-view nil
        )
+      ;; re-calc
+      (let ((off (send *target* :transformation (send *robot* :get :racket-target)))
+            roll re-calc)
+        (pprint off)
+        (setq roll (caddr (car (send off :rpy-angle))))
+        (pprint roll)
+        (if (> roll *range*)
+            (setq roll *range* re-calc t)
+          (if (< roll (* -1 *range*))
+              (setq roll (* -1 *range*) re-calc t)
+            ))
+        (when re-calc
+          (setq re-calc
+               (send (send *target* :copy-worldcoords) :rotate roll :x))
+          (pprint (list 're re-calc))
+          (fullbody-ik-jaxon
+           :rarm-target re-calc
+           :move-target-arms
+           (list (send *robot* :get :racket-target)
+                 (send *robot* :larm :end-coords))
+           :rotation-axis (list t t t t)
+                                        ;:rotation-axis (list t t t t)
+           :translation-axis (list t t t t)
+           :use-waist-r nil
+           :use-waist-y t
+           :root-link-virtual-joint-weight ;; root movement weight
+           (float-vector 0.1 0.1 0.1 0.03 0.0 0.03) ;; x,y,z,roll,pitch,yaw
+           :debug-view nil
+           ))
+        )
+
+      (send *robot* :head :look-at hitpoint-world)
 
       (print ";; ik solved~%")
 
@@ -102,13 +141,29 @@
       (send *racket* :move-coords (send *robot* :rarm :end-coords :copy-worldcoords) (send *racket* :get :gripper))
       (send *irtviewer* :draw-objects)
 
-      (send *ri* :angle-vector (send *robot* :angle-vector) 1000) ;; 1000ms
+      (when *real*
+        (let ((av (send *robot*  :angle-vector))
+              tm)
+          (setq *prev-angle* (send *ri* :state :reference-vector))
+          (setq tm (* 40 (norm (v- av *prev-angle*))))
+          (when (< tm 300) (setq tm 300))
+          (pprint (list :tm tm))
+          (send *ri* :angle-vector (send *robot* :angle-vector) tm)
+          ;;(send *ri* :angle-vector (send *robot* :angle-vector) 4000)
+          ))
 
       (setq *point-msg* nil)
       )
-    (unix::usleep (* 1000 10));; 10ms
+    ;;(unix::usleep (* 1000 10));; 10ms
+    (unix::usleep (* 1000 100));; 10ms
     (x::window-main-one)
     )
 )
 
 (tracking_ball)
+
+;;(send *ri* :angle-vector (send *robot* :reset-pose) 6000)
+;;(unix::usleep (* 2000 1000))
+;;(send *ri* :angle-vector (send *robot* :reset-manip-pose) 1000)
+;;(send *ri* :set-max-loglength (* 500 600))
+;;(send *ri* :save-log "/home/leus/hrpsyslog")
