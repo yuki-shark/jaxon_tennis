@@ -1,5 +1,6 @@
 (load "package://hrpsys_ros_bridge_tutorials/euslisp/jaxon-interface.l")
-(load "../model/racket-model.l")
+;;(load "../model/racket-model.l")
+(load "../model/racket-model2.l")
 
 (defun jaxon_racket ()
   ;;(jaxon-init)

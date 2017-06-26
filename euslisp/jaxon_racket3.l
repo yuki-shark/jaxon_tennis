@@ -1,5 +1,6 @@
 (load "package://hrpsys_ros_bridge_tutorials/euslisp/jaxon-interface.l")
-(load "../model/racket-model.l")
+;(load "../model/racket-model.l")
+(load "../model/racket-model2.l")
 (load "fullbody-ik-jaxon.l")
 
 (defun callback-target (msg)
@@ -104,4 +105,4 @@
     )
 )
 
-(jaxon_racket3 (deg2rad 45))
+(jaxon_racket3 (deg2rad 30))
