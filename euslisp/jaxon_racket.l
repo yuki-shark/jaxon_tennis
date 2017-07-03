@@ -3,7 +3,7 @@
 ;;(load "../model/racket-model.l")
 (load "../model/racket-model2.l")
 
-(setq *real* t)
+(setq *real* nil)
 
 (defun jaxon_racket ()
 

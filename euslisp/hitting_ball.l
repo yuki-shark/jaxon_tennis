@@ -59,19 +59,10 @@
 
   (setq *tfl* (instance ros::transform-listener :init)) ;; subscribe
 
-  (ros::subscribe "/centroid_calc_from_stereo_image"
+  (ros::subscribe "/hit_point"
                   geometry_msgs::PointStamped
                   #'callback-point 1)
 
-  ;; (if *real*
-  ;;     (jaxon_red-init)
-  ;;   (jaxon_red))
-  ;;
-  ;; (setq *robot* *jaxon_red*)
-  ;; (send *robot* :reset-pose)
-  ;; (send *robot* :fix-leg-to-coords (make-coords))
-  ;; (setq *racket* (instance racket :init :move-origin nil))
-  ;; (send *racket* :move-coords (send *robot* :rarm :end-coords :copy-worldcoords) (send *racket* :get :gripper))
   (let* ((ed (send *robot* :rarm :end-coords))
          (pr (send ed :parent))
          (tg (make-cascoords :coords (send (send *racket* :get :target) :copy-worldcoords)))
