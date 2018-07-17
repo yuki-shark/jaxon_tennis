@@ -39,6 +39,12 @@
 
     (when *target-msg*
 
+      (setq start (send (ros::time-now) :to-sec))
+
+      (setq pose (send *robot* :angle-vector))
+      (send *robot* :reset-pose)
+      (send *robot* :fix-leg-to-coords (make-coords))
+
       (setq x (send *target-msg* :point :x))
       (setq y (send *target-msg* :point :y))
       (setq z (send *target-msg* :point :z))
@@ -74,6 +80,8 @@
               (setq roll (* -1 *range*) re-calc t)
             ))
         (when re-calc
+          (send *robot* :angle-vector pose)
+          (send *robot* :fix-leg-to-coords (make-coords))
           (setq re-calc
                (send (send *target* :copy-worldcoords) :rotate roll :x))
           (pprint (list 're re-calc))
@@ -93,6 +101,8 @@
            ))
         )
 
+      (setq end (send (ros::time-now) :to-sec))
+      (format t "calc time ~A~%" (- end start))
       (print ";; ik solved~%")
 
       (send *racket* :move-coords *target* (send *racket* :get :target))
